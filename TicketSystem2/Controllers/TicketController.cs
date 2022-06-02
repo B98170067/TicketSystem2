@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TicketSystem.Services;
 using TicketSystem.ViewModels;
 
-namespace TicketSystem.Controllers
+namespace TicketSystem2.Controllers
 {
     public class TicketController : Controller
     {
@@ -13,37 +14,73 @@ namespace TicketSystem.Controllers
             _ticketServicel = ticketServicel;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+            return View(await _ticketServicel.GetList());
         }
 
+        [Authorize(Roles = "QA")]
         public IActionResult Create()
         {
             return View();
         }
 
         [HttpPost]
-        public IActionResult Create(CreatTicketModel input)
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "QA")]
+        public async Task<IActionResult> Create(CreatTicketModel input)
         {
-            return View();
+            if (ModelState.IsValid)
+            {
+                await _ticketServicel.Creat(input);
+                return RedirectToAction(nameof(Index));
+            }
+            return View(input);
         }
 
-        public IActionResult Edit()
+        [Authorize(Roles = "QA")]
+        public async Task<IActionResult> Edit(int? id)
         {
-            return View();
+            var result = await _ticketServicel.Get(id);
+            if (result.Success)
+            {
+                return View(result.Data);
+            }
+            return NotFound();
         }
 
         [HttpPost]
-        public IActionResult Edit(UpdateTicketModel input)
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "QA")]
+        public async Task<IActionResult> Edit(UpdateTicketModel input)
         {
-            return View();
+            if (ModelState.IsValid)
+            {
+                var result = await _ticketServicel.Update(input);
+                if (result.Success)
+                {
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+            return View(input);
         }
 
         [HttpPost]
-        public IActionResult Resolve(UpdateTicketModel input)
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "QA")]
+        public async Task<IActionResult> Delete(int? id)
         {
-            return View();
+            var result = await _ticketServicel.Delete(id);
+            return Json(result);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "RD")]
+        public async Task<IActionResult> Resolve(int? id)
+        {
+            var result = await _ticketServicel.Resolve(id);
+            return Json(result);
         }
     }
 }
